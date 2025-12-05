@@ -1,10 +1,10 @@
 import { usePlaylist } from "@/context/playlist-context";
-import { Button, buttonVariants } from "../ui/button"; // 🛠️ Importamos buttonVariants para los Dialogs
+import { Button, buttonVariants } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { FaExclamationCircle, FaGithub } from "react-icons/fa";
-import { useState } from "react";
-import { cn } from "@/lib/utils"; // Para combinar clases si es necesario
+import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 import {
   AlertDialog,
@@ -19,7 +19,10 @@ import {
 import { CheckIcon } from "@/components/ui/check";
 
 export default function InputFields() {
-  const [authHeaders, setAuthHeaders] = useState("");
+  // Recuperar estado inicial si existe en sessionStorage
+  const savedHeaders = sessionStorage.getItem("temp_auth_headers") || "";
+
+  const [authHeaders, setAuthHeaders] = useState(savedHeaders);
   const [serverOnline, setServerOnline] = useState(false);
 
   const [isValidUrl, setIsValidUrl] = useState(true);
@@ -42,6 +45,20 @@ export default function InputFields() {
 
   const { playlistUrl, setPlaylistUrl } = usePlaylist();
 
+  // Efecto de Inicialización: Recuperar datos y Auto-Conectar
+  useEffect(() => {
+    // Recuperar URL guardada si existe y el contexto está vacío
+    const savedUrl = sessionStorage.getItem("temp_playlist_url");
+    if (savedUrl && !playlistUrl) {
+      setPlaylistUrl(savedUrl);
+    }
+
+    // Intentar conectar al servidor automáticamente al cargar
+    testConnection(true); // true = modo silencioso
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const validateUrl = (url: string) => {
     const pattern = /^(?:https?:\/\/)?open\.spotify\.com\/playlist\/.+/;
     return pattern.test(url);
@@ -51,6 +68,14 @@ export default function InputFields() {
     const url = e.target.value;
     setPlaylistUrl(url);
     setIsValidUrl(validateUrl(url) || url === "");
+    // Guardar en sesión mientras escribes para no perderlo
+    sessionStorage.setItem("temp_playlist_url", url);
+  };
+
+  const handleHeadersChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setAuthHeaders(val);
+    sessionStorage.setItem("temp_auth_headers", val);
   };
 
   async function clonePlaylist() {
@@ -76,11 +101,12 @@ export default function InputFields() {
           setMissedTracksDialog(true);
         }
         setStarPrompt(true);
+        sessionStorage.removeItem("temp_playlist_url");
       } else if (res.status === 500) {
         setCloneError(true);
         setCloneErrorMessage(
           <>
-            Server timeout while cloning playlist. Please try again or{" "}
+            Server Error. Please try again or{" "}
             <a
               href="https://github.com/edvincodes/LinkList/issues/new/choose"
               className="text-cyan-400 hover:underline"
@@ -103,9 +129,12 @@ export default function InputFields() {
     }
   }
 
-  async function testConnection() {
-    setConnectionDialogOpen(true);
-    setConnectionError(false);
+  // Modificado para aceptar modo silencioso (silent = true)
+  async function testConnection(silent = false) {
+    if (!silent) {
+      setConnectionDialogOpen(true);
+      setConnectionError(false);
+    }
     setServerOnline(false);
 
     try {
@@ -119,49 +148,24 @@ export default function InputFields() {
       if (res.ok) {
         setServerOnline(true);
         console.log(data);
-      } else if (res.status === 500) {
+      } else if (res.status === 500 && !silent) {
         setConnectionError(true);
-        setErrorMessage(
-          <>
-            Server Error (500). The server likely hit a timeout. Please try
-            again later or{" "}
-            <a
-              href="https://github.com/edvincodes/LinkList/issues/new/choose"
-              className="text-cyan-400 hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              report this issue on GitHub
-            </a>
-            .
-          </>
-        );
+        setErrorMessage(<>Server Error (500).</>);
       }
     } catch {
-      setConnectionError(true);
-      setErrorMessage(
-        <>
-          Unable to connect to server. If this issue persists, please contact me
-          or{" "}
-          <a
-            href="https://github.com/edvincodes/LinkList/issues/new/choose"
-            className="text-cyan-400 hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            open an issue on GitHub
-          </a>
-        </>
-      );
+      if (!silent) {
+        setConnectionError(true);
+        setErrorMessage(<>Unable to connect to server.</>);
+      }
     } finally {
-      setConnectionDialogOpen(false);
+      if (!silent) setConnectionDialogOpen(false);
     }
   }
 
   return (
     <>
       <div className="w-full max-w-6xl flex flex-col lg:flex-row items-start justify-center gap-10 lg:gap-16 px-4 mb-20">
-        {/* Columna Izquierda: Headers */}
+        {/* Columna Izquierda: Headers YTM */}
         <div className="flex flex-col gap-4 items-center w-full lg:w-1/2">
           <div className="space-y-1 w-full">
             <h1 className="text-xl font-bold text-foreground">
@@ -174,14 +178,13 @@ export default function InputFields() {
           <Textarea
             placeholder="Paste your headers here"
             value={authHeaders}
-            onChange={(e) => setAuthHeaders(e.target.value)}
+            onChange={handleHeadersChange}
             id="auth-headers"
-            // 🛠️ LIMPIO: Usamos el estilo por defecto del componente + tamaño específico
             className="w-full h-[300px] resize-none"
           />
         </div>
 
-        {/* Columna Derecha: Conexión y URL */}
+        {/* Columna Derecha: Conexión y Spotify */}
         <div className="flex flex-col w-full lg:w-1/2 gap-6 lg:gap-10">
           {/* 1. Conexión */}
           <div className="flex flex-col w-full gap-4 items-start">
@@ -189,62 +192,74 @@ export default function InputFields() {
               <h1 className="text-xl font-bold text-foreground">
                 1. Server Connection
               </h1>
-
               {serverOnline ? (
-                // 🛠️ CORRECCIÓN: Cambiamos <p> por <div>
                 <div className="text-lime-400 font-semibold text-sm flex items-center gap-2 animate-pulse">
                   <CheckIcon className="w-4 h-4" />
                   Connection Successful
                 </div>
               ) : (
-                // Aquí también es mejor usar <div> para mantener la consistencia, aunque <p> no daría error al no tener icono dentro
                 <div className="text-cyan-400 text-sm">
-                  Click 'Connect' to verify the LinkList server status.
+                  Connecting to server... (or click Connect manually)
                 </div>
               )}
             </div>
 
-            <AlertDialog
-              open={connectionDialogOpen}
-              onOpenChange={setConnectionDialogOpen}
-            >
-              <AlertDialogTrigger asChild>
-                <Button
-                  className="w-full"
-                  size="lg" // 🛠️ Usamos size LG para mayor impacto
-                  onClick={testConnection}
-                  // Nota: Usa variant="default" (Cyan) automáticamente
-                >
-                  Connect
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Requesting connection...</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Please wait till the server comes online. This may take up
-                    to a minute.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-              </AlertDialogContent>
-            </AlertDialog>
+            {!serverOnline && (
+              <AlertDialog
+                open={connectionDialogOpen}
+                onOpenChange={setConnectionDialogOpen}
+              >
+                <AlertDialogTrigger asChild>
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={() => testConnection(false)}
+                  >
+                    Connect Manually
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-card border border-cyan-500/20">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Requesting connection...
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Please wait till the server comes online.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
 
-          {/* 2. URL Spotify */}
+          {/* 2. URL Spotify (Sin Login) */}
           <div className="flex flex-col w-full gap-4 items-start">
             <div className="space-y-2 w-full">
               <h1 className="text-xl font-bold text-foreground">
                 2. Paste Spotify Playlist URL
               </h1>
-              <div className="flex flex-col gap-1 mt-1">
+
+              <div className="flex flex-col gap-2 mt-1">
+                {/* Advertencia 1: Playlist pública */}
                 <div className="flex items-center gap-2">
-                  <FaExclamationCircle className="text-cyan-400 w-4 h-4" />
+                  <FaExclamationCircle className="text-cyan-400 w-4 h-4 shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     Make sure the playlist is public
                   </p>
                 </div>
-                <div className="flex items-start gap-2 mt-2">
-                  <FaExclamationCircle className="text-yellow-400 w-4 h-4 mt-0.5" />
+
+                {/* Advertencia 2: Playlists no soportadas (NUEVA) */}
+                <div className="flex items-start gap-2">
+                  <FaExclamationCircle className="text-orange-400 w-4 h-4 mt-0.5 shrink-0" />
+                  <p className="text-sm text-muted-foreground">
+                    Not all playlists work. Spotify-owned or algorithmic
+                    playlists (like "Mega Hit Mix") may fail.
+                  </p>
+                </div>
+
+                {/* Advertencia 3: Timeout */}
+                <div className="flex items-start gap-2">
+                  <FaExclamationCircle className="text-yellow-400 w-4 h-4 mt-0.5 shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     Timeout issues are common. Consider
                     <a
@@ -254,7 +269,7 @@ export default function InputFields() {
                       className="text-cyan-400 hover:underline ml-1"
                     >
                       self-hosting
-                    </a>{" "}
+                    </a>
                     for better reliability.
                   </p>
                 </div>
@@ -266,7 +281,6 @@ export default function InputFields() {
               value={playlistUrl}
               onChange={handleUrlChange}
               id="playlist-name"
-              // 🛠️ LIMPIO: Solo añadimos clase de error si es necesario
               className={
                 !isValidUrl
                   ? "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20"
@@ -279,6 +293,7 @@ export default function InputFields() {
               </p>
             )}
 
+            {/* Botón Clone */}
             <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button
@@ -289,14 +304,14 @@ export default function InputFields() {
                     !serverOnline
                   }
                   className="w-full"
-                  variant="lime" // 🚀 USAMOS LA NUEVA VARIANTE LIME
+                  variant="lime"
                   size="lg"
                   onClick={clonePlaylist}
                 >
                   Clone Playlist
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="bg-card border border-cyan-500/20">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Fetching playlist...</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -310,8 +325,6 @@ export default function InputFields() {
       </div>
 
       {/* --- DIÁLOGOS DE ALERTA --- */}
-
-      {/* Éxito / Star Prompt */}
       <AlertDialog open={starPrompt} onOpenChange={setStarPrompt}>
         <AlertDialogContent className="bg-card border border-lime-500/30 shadow-2xl shadow-lime-500/10">
           <AlertDialogHeader>
@@ -343,7 +356,6 @@ export default function InputFields() {
                   <FaGithub className="w-4 h-4" />
                 </a>
               </Button>
-              {/* Usamos buttonVariants para aplicar el estilo Lime al AlertDialogAction */}
               <AlertDialogAction
                 className={cn(
                   buttonVariants({ variant: "lime" }),
@@ -357,7 +369,6 @@ export default function InputFields() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Error de Conexión */}
       <AlertDialog open={connectionError} onOpenChange={setConnectionError}>
         <AlertDialogContent className="bg-card border border-red-500/30 shadow-2xl shadow-red-500/10">
           <AlertDialogHeader>
@@ -379,7 +390,6 @@ export default function InputFields() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Error de Clonación */}
       <AlertDialog open={cloneError} onOpenChange={setCloneError}>
         <AlertDialogContent className="bg-card border border-red-500/30 shadow-2xl shadow-red-500/10">
           <AlertDialogHeader>
@@ -401,7 +411,6 @@ export default function InputFields() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Pistas Omitidas */}
       <AlertDialog
         open={missedTracksDialog}
         onOpenChange={setMissedTracksDialog}
