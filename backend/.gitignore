@@ -1,9 +1,23 @@
-*.json
-*.txt
-test.py
-.env
-venv/
+# --- Python & Sistema ---
 __pycache__/
 *.pyc
 *.pyo
 .Python
+venv/
+env/
+.env
+
+# --- Archivos temporales de LinkList ---
+# Ignoramos todos los JSON (credenciales) y TXT (logs), 
+# pero salvamos requirements.txt
+*.json
+*.txt
+!requirements.txt
+
+# --- Archivos específicos de pruebas o logs ---
+test.py
+browser.json
+header_auth.json
+missed_tracks.txt
+video_ids.txt
+```
