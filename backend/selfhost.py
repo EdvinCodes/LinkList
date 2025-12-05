@@ -78,7 +78,8 @@ def main():
 
         # 3. Obtener Datos de Spotify
         logger.info("Fetching tracks from Spotify...")
-        tracks = get_all_tracks(link, "IN")
+        
+        tracks = get_all_tracks(link)
         playlist_name = get_playlist_name(link)
         logger.info(f"Found {len(tracks)} tracks in playlist: {playlist_name}")
 

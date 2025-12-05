@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configurar logger
+# Configurar logger para ver todo lo que pasa
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def get_headers(token):
@@ -18,11 +19,12 @@ def get_spotify_access_token():
     client_secret = os.getenv('SPOTIPY_CLIENT_SECRET')
 
     if not client_id or not client_secret:
-        raise Exception("Missing SPOTIPY_CLIENT_ID or SPOTIPY_CLIENT_SECRET in .env file")
+        logger.error("❌ Faltan las credenciales de Spotify en .env")
+        raise Exception("Missing SPOTIPY_CLIENT_ID or SPOTIPY_CLIENT_SECRET")
 
     url = "https://accounts.spotify.com/api/token"
     
-    # La forma estándar de enviar credenciales es Authorization header en base64
+    # Codificación estándar en Base64 para la API de Spotify
     auth_str = f"{client_id}:{client_secret}"
     b64_auth = base64.b64encode(auth_str.encode()).decode()
 
@@ -34,50 +36,82 @@ def get_spotify_access_token():
     
     try:
         response = requests.post(url, headers=headers, data=data)
-        response.raise_for_status() # Lanza error si no es 200
+        response.raise_for_status()
         return response.json()["access_token"]
     except Exception as e:
-        logger.error(f"Failed to get Spotify Token: {str(e)}")
+        logger.error(f"❌ Error obteniendo token de Spotify: {str(e)}")
+        if 'response' in locals():
+             logger.error(f"Respuesta Spotify: {response.text}")
         raise Exception("Failed to authenticate with Spotify")
 
 def extract_playlist_id(playlist_url):
-    # Usamos Regex para capturar el ID limpiamente
-    # Soporta: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=...
-    match = re.search(r"playlist/([a-zA-Z0-9]+)", playlist_url)
+    # 1. Limpieza básica
+    url_limpia = playlist_url.strip()
+    
+    # 2. Regex robusto: Busca después de "playlist/" o "playlist:"
+    # Acepta alfanuméricos, guiones y guiones bajos (Base62 estándar)
+    match = re.search(r"playlist[:/]([a-zA-Z0-9\-_]+)", url_limpia)
+    
     if match:
-        return match.group(1)
+        playlist_id = match.group(1)
+        logger.info(f"✅ ID extraído: {playlist_id}")
+        return playlist_id
     else:
-        raise Exception("Invalid Spotify Playlist URL. Could not extract ID.")
+        # Fallback manual mejorado
+        try:
+            # Dividimos por 'playlist/' y tomamos la parte derecha
+            part = url_limpia.split("/playlist/")[1]
+            # Limpiamos query params (?) y slashes finales (/)
+            playlist_id = part.split("?")[0].split("/")[0]
+            
+            if len(playlist_id) > 0:
+                logger.info(f"✅ ID extraído (fallback): {playlist_id}")
+                return playlist_id
+            else:
+                raise Exception("Empty ID")
+        except:
+            logger.error(f"❌ No se pudo extraer ID de: {playlist_url}")
+            raise Exception("Invalid Spotify Playlist URL. Could not extract ID.")
 
-def get_all_tracks(link, market="US"):
+def get_all_tracks(link):
     try:
         playlist_id = extract_playlist_id(link)
         access_token = get_spotify_access_token()
         
-        # Endpoint directo a los tracks para paginación fácil
-        url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?market={market}&limit=100"
+        # Quitamos el parámetro market para evitar restricciones regionales forzadas
+        url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100"
         headers = get_headers(access_token)
         
         all_tracks = []
         
-        logger.info(f"Fetching tracks for playlist {playlist_id}...")
+        logger.info(f"🔍 Requesting Spotify API: {url}") # LOG IMPORTANTE
 
         while url:
             response = requests.get(url, headers=headers)
             
             if response.status_code != 200:
-                logger.error(f"Spotify API Error: {response.text}")
-                raise Exception(f"Spotify API returned {response.status_code}")
+                # Si falla aquí, mira la URL impresa arriba ⬆️
+                logger.error(f"❌ Error API Spotify ({response.status_code}) en URL: {url}")
+                logger.error(f"Respuesta: {response.text}")
+                
+                if response.status_code == 404:
+                    raise Exception("Spotify API Error: 404 (Playlist Not Found or Private)")
+                
+                raise Exception(f"Spotify API Error: {response.status_code}")
 
             data = response.json()
+            items = data.get("items")
             
-            for item in data.get("items", []):
+            if items is None:
+                logger.error(f"⚠️ Estructura inesperada: {data.keys()}")
+                break
+
+            for item in items:
                 track = item.get("track")
                 # Filtramos tracks locales, nulos o con restricciones
                 if not track or track.get("is_local"):
                     continue
                 
-                # Extraemos solo lo necesario
                 track_info = {
                     "name": track["name"],
                     "artists": [artist["name"] for artist in track["artists"]],
@@ -86,14 +120,13 @@ def get_all_tracks(link, market="US"):
                 }
                 all_tracks.append(track_info)
             
-            # Paginación: Spotify devuelve 'next' como URL o None (null en JSON)
             url = data.get("next")
             
-        logger.info(f"Successfully fetched {len(all_tracks)} tracks from Spotify.")
+        logger.info(f"✅ Total canciones encontradas: {len(all_tracks)}")
         return all_tracks
 
     except Exception as e:
-        logger.error(f"Error in get_all_tracks: {str(e)}")
+        logger.error(f"🔥 CRASH en get_all_tracks: {str(e)}")
         raise e
 
 def get_playlist_name(link):
@@ -107,11 +140,12 @@ def get_playlist_name(link):
         response = requests.get(url, headers=headers)
         
         if response.status_code != 200:
-            raise Exception("Could not fetch playlist details")
+            logger.error(f"Error obteniendo nombre playlist ({response.status_code}): {response.text}")
+            return "LinkList Import"
             
         data = response.json()
-        return data.get("name", "Untitled Playlist")
+        return data.get("name", "LinkList Import")
         
     except Exception as e:
-        logger.error(f"Error getting playlist name: {str(e)}")
-        return "LinkList Import" # Fallback seguro
+        logger.warning(f"No se pudo obtener nombre playlist: {str(e)}")
+        return "LinkList Import"

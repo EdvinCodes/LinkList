@@ -189,15 +189,18 @@ export default function InputFields() {
               <h1 className="text-xl font-bold text-foreground">
                 1. Server Connection
               </h1>
+
               {serverOnline ? (
-                <p className="text-lime-400 font-semibold text-sm flex items-center gap-2 animate-pulse">
+                // 🛠️ CORRECCIÓN: Cambiamos <p> por <div>
+                <div className="text-lime-400 font-semibold text-sm flex items-center gap-2 animate-pulse">
                   <CheckIcon className="w-4 h-4" />
                   Connection Successful
-                </p>
+                </div>
               ) : (
-                <p className="text-cyan-400 text-sm">
+                // Aquí también es mejor usar <div> para mantener la consistencia, aunque <p> no daría error al no tener icono dentro
+                <div className="text-cyan-400 text-sm">
                   Click 'Connect' to verify the LinkList server status.
-                </p>
+                </div>
               )}
             </div>
 
@@ -251,7 +254,7 @@ export default function InputFields() {
                       className="text-cyan-400 hover:underline ml-1"
                     >
                       self-hosting
-                    </a>
+                    </a>{" "}
                     for better reliability.
                   </p>
                 </div>

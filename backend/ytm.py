@@ -65,7 +65,9 @@ def create_ytm_playlist(playlist_link, headers_raw):
         
         # 3. Obtener datos de Spotify
         logger.info("Fetching Spotify tracks...")
-        tracks = get_all_tracks(playlist_link, "IN") # "IN" es el código de país
+
+        tracks = get_all_tracks(playlist_link) 
+        
         name = get_playlist_name(playlist_link)
         
         # 4. Buscar canciones en YT Music
