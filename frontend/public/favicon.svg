@@ -1,0 +1,23 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="64" height="64" rx="16" fill="#09090b"/>
+    
+    <defs>
+        <linearGradient id="neon_gradient" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#22d3ee"/> <stop offset="100%" stop-color="#a3e635"/> </linearGradient>
+        
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+    </defs>
+
+    <g filter="url(#glow)">
+        <path 
+            d="M38 20H46C50.4183 20 54 23.5817 54 28V28C54 32.4183 50.4183 36 46 36H42M26 44H18C13.5817 44 10 40.4183 10 36V36C10 31.5817 13.5817 28 18 28H22M20 32L44 32" 
+            stroke="url(#neon_gradient)" 
+            stroke-width="6" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"
+        />
+    </g>
+</svg>
