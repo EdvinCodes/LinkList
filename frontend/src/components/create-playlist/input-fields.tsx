@@ -164,10 +164,10 @@ export default function InputFields() {
 
   return (
     <>
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-start justify-center gap-10 lg:gap-16 px-4 mb-20">
+      <div className="flex flex-col items-start justify-center w-full max-w-6xl gap-10 px-4 mb-20 lg:flex-row lg:gap-16">
         {/* Columna Izquierda: Headers YTM */}
-        <div className="flex flex-col gap-4 items-center w-full lg:w-1/2">
-          <div className="space-y-1 w-full">
+        <div className="flex flex-col items-center w-full gap-4 lg:w-1/2">
+          <div className="w-full space-y-1">
             <h1 className="text-xl font-bold text-foreground">
               Paste YouTube Music headers here
             </h1>
@@ -185,20 +185,20 @@ export default function InputFields() {
         </div>
 
         {/* Columna Derecha: Conexión y Spotify */}
-        <div className="flex flex-col w-full lg:w-1/2 gap-6 lg:gap-10">
+        <div className="flex flex-col w-full gap-6 lg:w-1/2 lg:gap-10">
           {/* 1. Conexión */}
-          <div className="flex flex-col w-full gap-4 items-start">
-            <div className="space-y-2 w-full">
+          <div className="flex flex-col items-start w-full gap-4">
+            <div className="w-full space-y-2">
               <h1 className="text-xl font-bold text-foreground">
                 1. Server Connection
               </h1>
               {serverOnline ? (
-                <div className="text-lime-400 font-semibold text-sm flex items-center gap-2 animate-pulse">
+                <div className="flex items-center gap-2 text-sm font-semibold text-lime-400 animate-pulse">
                   <CheckIcon className="w-4 h-4" />
                   Connection Successful
                 </div>
               ) : (
-                <div className="text-cyan-400 text-sm">
+                <div className="text-sm text-cyan-400">
                   Connecting to server... (or click Connect manually)
                 </div>
               )}
@@ -218,7 +218,7 @@ export default function InputFields() {
                     Connect Manually
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="bg-card border border-cyan-500/20">
+                <AlertDialogContent className="border bg-card border-cyan-500/20">
                   <AlertDialogHeader>
                     <AlertDialogTitle>
                       Requesting connection...
@@ -233,8 +233,8 @@ export default function InputFields() {
           </div>
 
           {/* 2. URL Spotify (Sin Login) */}
-          <div className="flex flex-col w-full gap-4 items-start">
-            <div className="space-y-2 w-full">
+          <div className="flex flex-col items-start w-full gap-4">
+            <div className="w-full space-y-2">
               <h1 className="text-xl font-bold text-foreground">
                 2. Paste Spotify Playlist URL
               </h1>
@@ -242,7 +242,7 @@ export default function InputFields() {
               <div className="flex flex-col gap-2 mt-1">
                 {/* Advertencia 1: Playlist pública */}
                 <div className="flex items-center gap-2">
-                  <FaExclamationCircle className="text-cyan-400 w-4 h-4 shrink-0" />
+                  <FaExclamationCircle className="w-4 h-4 text-cyan-400 shrink-0" />
                   <p className="text-sm text-muted-foreground">
                     Make sure the playlist is public
                   </p>
@@ -266,10 +266,10 @@ export default function InputFields() {
                       href="https://github.com/edvincodes/LinkList"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-cyan-400 hover:underline ml-1"
+                      className="ml-1 text-cyan-400 hover:underline"
                     >
                       self-hosting
-                    </a>
+                    </a>{" "}
                     for better reliability.
                   </p>
                 </div>
@@ -288,7 +288,7 @@ export default function InputFields() {
               }
             />
             {!isValidUrl && (
-              <p className="text-red-500 text-sm">
+              <p className="text-sm text-red-500">
                 Please enter a valid Spotify playlist URL
               </p>
             )}
@@ -311,7 +311,7 @@ export default function InputFields() {
                   Clone Playlist
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="bg-card border border-cyan-500/20">
+              <AlertDialogContent className="border bg-card border-cyan-500/20">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Fetching playlist...</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -326,13 +326,13 @@ export default function InputFields() {
 
       {/* --- DIÁLOGOS DE ALERTA --- */}
       <AlertDialog open={starPrompt} onOpenChange={setStarPrompt}>
-        <AlertDialogContent className="bg-card border border-lime-500/30 shadow-2xl shadow-lime-500/10">
+        <AlertDialogContent className="border shadow-2xl bg-card border-lime-500/30 shadow-lime-500/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lime-400 flex items-center gap-2 text-xl">
+            <AlertDialogTitle className="flex items-center gap-2 text-xl text-lime-400">
               <CheckIcon className="w-6 h-6" />
               Your Playlist has been cloned!
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-foreground/80 text-base">
+            <AlertDialogDescription className="text-base text-foreground/80">
               <div className="mt-4 space-y-2">
                 <p>Please consider starring the project on GitHub.</p>
                 <p>It's free and helps me a lot!</p>
@@ -340,7 +340,7 @@ export default function InputFields() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4">
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+            <div className="flex flex-col items-center w-full gap-3 sm:flex-row">
               <Button
                 variant="outline"
                 className="w-full border-cyan-500/50 hover:bg-cyan-500/10 text-cyan-400"
@@ -370,9 +370,9 @@ export default function InputFields() {
       </AlertDialog>
 
       <AlertDialog open={connectionError} onOpenChange={setConnectionError}>
-        <AlertDialogContent className="bg-card border border-red-500/30 shadow-2xl shadow-red-500/10">
+        <AlertDialogContent className="border shadow-2xl bg-card border-red-500/30 shadow-red-500/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-400 flex items-center gap-2">
+            <AlertDialogTitle className="flex items-center gap-2 text-red-400">
               <FaExclamationCircle /> Connection Error
             </AlertDialogTitle>
             <AlertDialogDescription className="text-foreground/80">
@@ -391,9 +391,9 @@ export default function InputFields() {
       </AlertDialog>
 
       <AlertDialog open={cloneError} onOpenChange={setCloneError}>
-        <AlertDialogContent className="bg-card border border-red-500/30 shadow-2xl shadow-red-500/10">
+        <AlertDialogContent className="border shadow-2xl bg-card border-red-500/30 shadow-red-500/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-400 flex items-center gap-2">
+            <AlertDialogTitle className="flex items-center gap-2 text-red-400">
               <FaExclamationCircle /> Clone Error
             </AlertDialogTitle>
             <AlertDialogDescription className="text-foreground/80">
@@ -415,9 +415,9 @@ export default function InputFields() {
         open={missedTracksDialog}
         onOpenChange={setMissedTracksDialog}
       >
-        <AlertDialogContent className="bg-card border border-yellow-500/30 shadow-2xl shadow-yellow-500/10">
+        <AlertDialogContent className="border shadow-2xl bg-card border-yellow-500/30 shadow-yellow-500/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-yellow-400 flex items-center gap-2">
+            <AlertDialogTitle className="flex items-center gap-2 text-yellow-400">
               <FaExclamationCircle /> Some songs couldn't be found
             </AlertDialogTitle>
             <AlertDialogDescription className="text-foreground/80">
@@ -426,9 +426,9 @@ export default function InputFields() {
                   {missedTracks.count} songs couldn't be found on YouTube Music:
                 </p>
                 <div className="max-h-[200px] overflow-y-auto bg-background/50 p-2 rounded-md border border-white/10">
-                  <ul className="list-disc list-inside space-y-1">
+                  <ul className="space-y-1 list-disc list-inside">
                     {missedTracks.tracks.map((track, index) => (
-                      <li key={index} className="text-sm font-mono">
+                      <li key={index} className="font-mono text-sm">
                         {track}
                       </li>
                     ))}
