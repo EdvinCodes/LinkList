@@ -21,12 +21,12 @@ export default function Navbar() {
         {/* ENLACES DERECHA */}
         <div className="flex items-center gap-8">
           {/* 🛠️ NUEVO: Enlace a Announcements */}
-          <Link
+          {/* <Link
             to="/announcements"
             className="text-white hover:text-cyan-400 text-lg font-medium transition-colors"
           >
             Announcements
-          </Link>
+          </Link> */}
 
           {/* Enlace a GitHub */}
           <a
