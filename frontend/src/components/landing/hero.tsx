@@ -7,10 +7,11 @@ import { cn } from "@/lib/utils";
 export default function Hero() {
   const { playlistUrl, setPlaylistUrl } = usePlaylist();
 
-  // 1. Lógica de validación
+  // 1. Lógica de validación estricta
   const validateUrl = (url: string) => {
-    // Regex simple para playlists de Spotify
-    const pattern = /^(?:https?:\/\/)?open\.spotify\.com\/playlist\/.+/;
+    // Permite el formato de Spotify e ignora parámetros extra al final como ?si=xxx
+    const pattern =
+      /^(?:https?:\/\/)?open\.spotify\.com\/playlist\/[a-zA-Z0-9]+(?:\?.*)?$/;
     return pattern.test(url);
   };
 
@@ -74,7 +75,7 @@ export default function Hero() {
                 "w-full h-12 text-lg transition-all duration-300",
                 // Si hay error, borde rojo y anillo rojo. Si no, usa el estilo por defecto del componente Input.
                 isError &&
-                  "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20"
+                  "border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/20",
               )}
             />
 

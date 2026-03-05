@@ -55,37 +55,33 @@ def get_video_ids(ytmusic, tracks):
     return video_ids, missed_tracks
 
 def create_ytm_playlist(playlist_link, headers_raw):
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json') as temp_auth_file:
-        auth_filepath = temp_auth_file.name
+    # Creamos un directorio temporal que se auto-destruye al terminar
+    with tempfile.TemporaryDirectory() as temp_dir:
+        auth_filepath = os.path.join(temp_dir, 'auth.json')
 
-    try:
-        logger.info("Sanitizing headers...")
-        # 🛠️ AQUI ESTÁ LA MAGIA: Limpiamos los headers de Chrome
-        headers_clean = sanitize_headers(headers_raw)
-        
-        logger.info("Setting up YouTube Music Auth...")
-        ytmusicapi.setup(filepath=auth_filepath, headers_raw=headers_clean)
-        
-        ytmusic = YTMusic(auth=auth_filepath)
-        
-        logger.info("Fetching Spotify tracks...")
-        # Usamos "US" por defecto para minimizar errores 404
-        tracks = get_all_tracks(playlist_link) 
-        name = get_playlist_name(playlist_link)
-        
-        logger.info(f"Searching for {len(tracks)} tracks on YTM...")
-        video_ids, missed_tracks = get_video_ids(ytmusic, tracks)
-        
-        logger.info(f"Creating playlist '{name}'...")
-        playlist_id = ytmusic.create_playlist(name, "Created with LinkList", "PUBLIC", video_ids)
-        
-        return missed_tracks
+        try:
+            logger.info("Sanitizing headers...")
+            headers_clean = sanitize_headers(headers_raw)
+            
+            logger.info("Setting up YouTube Music Auth...")
+            ytmusicapi.setup(filepath=auth_filepath, headers_raw=headers_clean)
+            
+            ytmusic = YTMusic(auth=auth_filepath)
+            
+            logger.info("Fetching Spotify tracks...")
+            tracks = get_all_tracks(playlist_link) 
+            name = get_playlist_name(playlist_link)
+            
+            logger.info(f"Searching for {len(tracks)} tracks on YTM...")
+            video_ids, missed_tracks = get_video_ids(ytmusic, tracks)
+            
+            logger.info(f"Creating playlist '{name}'...")
+            playlist_id = ytmusic.create_playlist(name, "Created with LinkList", "PUBLIC", video_ids)
+            
+            return missed_tracks
 
-    except Exception as e:
-        logger.error(f"Error in create_ytm_playlist: {str(e)}")
-        raise e
+        except Exception as e:
+            logger.error(f"Error in create_ytm_playlist: {str(e)}")
+            raise e
         
-    finally:
-        if os.path.exists(auth_filepath):
-            os.remove(auth_filepath)
-            logger.info("Temporary auth file deleted.")
+        # Eliminamos el bloque 'finally' manual, TemporaryDirectory se encarga de todo

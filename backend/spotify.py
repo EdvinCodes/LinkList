@@ -1,8 +1,8 @@
 import os
 import requests
 import logging
-import re
 import base64
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,6 +20,7 @@ def get_spotify_access_token():
     if not client_id or not client_secret:
         raise Exception("Missing SPOTIPY_CLIENT_ID or SPOTIPY_CLIENT_SECRET")
 
+    # URL oficial para obtener el token
     url = "https://accounts.spotify.com/api/token"
     auth_str = f"{client_id}:{client_secret}"
     b64_auth = base64.b64encode(auth_str.encode()).decode()
@@ -31,7 +32,7 @@ def get_spotify_access_token():
     data = {"grant_type": "client_credentials"}
     
     try:
-        response = requests.post(url, headers=headers, data=data)
+        response = requests.post(url, headers=headers, data=data, timeout=10)
         response.raise_for_status()
         return response.json()["access_token"]
     except Exception as e:
@@ -40,21 +41,19 @@ def get_spotify_access_token():
 
 def extract_playlist_id(playlist_url):
     url_limpia = playlist_url.strip()
-    match = re.search(r"playlist[:/]([a-zA-Z0-9\-_]+)", url_limpia)
+    match = re.search(r"playlist[:/]([a-zA-Z0-9]+)", url_limpia)
     
     if match:
         return match.group(1)
     else:
-        try:
-            return url_limpia.split("/playlist/")[1].split("?")[0]
-        except:
-            raise Exception("Invalid Spotify Playlist URL")
+        raise Exception("Invalid Spotify Playlist URL")
 
 def get_all_tracks(link):
     try:
         playlist_id = extract_playlist_id(link)
         access_token = get_spotify_access_token()
         
+        # URL oficial para obtener los tracks
         url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks?limit=100"
         headers = get_headers(access_token)
 
@@ -62,23 +61,17 @@ def get_all_tracks(link):
         logger.info(f"📥 Getting tracks for: {playlist_id}")
 
         while url:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=10)
             
             if response.status_code != 200:
-                # Si falla aquí, mira la URL impresa arriba ⬆️
                 logger.error(f"❌ Error API Spotify ({response.status_code}) en URL: {url}")
                 logger.error(f"Respuesta: {response.text}")
-                
                 if response.status_code == 404:
                     raise Exception("Spotify API Error: 404 (Playlist Not Found or Private)")
-                
                 raise Exception(f"Spotify API Error: {response.status_code}")
             
             data = response.json()
-            items = data.get("items")
-            
-            if items is None:
-                break
+            items = data.get("items", [])
 
             for item in items:
                 track = item.get("track")
@@ -106,10 +99,12 @@ def get_playlist_name(link):
     try:
         playlist_id = extract_playlist_id(link)
         access_token = get_spotify_access_token()
+        
+        # URL oficial para obtener los detalles de la playlist
         url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
         headers = get_headers(access_token)
         
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         if response.status_code != 200:
             return "LinkList Import"
         return response.json().get("name", "LinkList Import")

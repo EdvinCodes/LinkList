@@ -3,7 +3,8 @@ import multiprocessing
 # Server socket
 bind = "0.0.0.0:8080"
 workers = multiprocessing.cpu_count() * 2 + 1
-worker_class = 'sync'
+worker_class = 'gthread'  # Cambiado a gthread para no bloquear el servidor
+threads = 4               # Añadimos 4 hilos por worker
 # IMPORTANTE: 15 minutos de timeout para permitir playlists grandes
 timeout = 900
 

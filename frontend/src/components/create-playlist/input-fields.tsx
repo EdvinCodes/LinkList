@@ -19,15 +19,14 @@ import {
 import { CheckIcon } from "@/components/ui/check";
 
 export default function InputFields() {
-  // Recuperar estado inicial si existe en sessionStorage
   const savedHeaders = sessionStorage.getItem("temp_auth_headers") || "";
 
   const [authHeaders, setAuthHeaders] = useState(savedHeaders);
   const [serverOnline, setServerOnline] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false); // Nuevo estado para UI suave
 
   const [isValidUrl, setIsValidUrl] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
   const [starPrompt, setStarPrompt] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<React.ReactNode>("");
@@ -45,22 +44,18 @@ export default function InputFields() {
 
   const { playlistUrl, setPlaylistUrl } = usePlaylist();
 
-  // Efecto de Inicialización: Recuperar datos y Auto-Conectar
   useEffect(() => {
-    // Recuperar URL guardada si existe y el contexto está vacío
     const savedUrl = sessionStorage.getItem("temp_playlist_url");
     if (savedUrl && !playlistUrl) {
       setPlaylistUrl(savedUrl);
     }
-
-    // Intentar conectar al servidor automáticamente al cargar
-    testConnection(true); // true = modo silencioso
-
+    testConnection(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const validateUrl = (url: string) => {
-    const pattern = /^(?:https?:\/\/)?open\.spotify\.com\/playlist\/.+/;
+    const pattern =
+      /^(?:https?:\/\/)?open\.spotify\.com\/playlist\/[a-zA-Z0-9]+(?:\?.*)?$/;
     return pattern.test(url);
   };
 
@@ -68,7 +63,6 @@ export default function InputFields() {
     const url = e.target.value;
     setPlaylistUrl(url);
     setIsValidUrl(validateUrl(url) || url === "");
-    // Guardar en sesión mientras escribes para no perderlo
     sessionStorage.setItem("temp_playlist_url", url);
   };
 
@@ -93,46 +87,63 @@ export default function InputFields() {
         },
         body: JSON.stringify(body),
       });
+
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(
+          "El servidor no devolvió una respuesta válida (posible Timeout o Error 502).",
+        );
+      }
+
       const data = await res.json();
 
       if (res.ok) {
-        if (data.missed_tracks.count > 0) {
+        if (data.missed_tracks?.count > 0) {
           setMissedTracks(data.missed_tracks);
           setMissedTracksDialog(true);
         }
         setStarPrompt(true);
+
         sessionStorage.removeItem("temp_playlist_url");
+        sessionStorage.removeItem("temp_auth_headers");
+        setAuthHeaders("");
       } else if (res.status === 500) {
         setCloneError(true);
+        // EXTRAEMOS EL MENSAJE DEL BACKEND SI EXISTE
         setCloneErrorMessage(
-          <>
-            Server Error. Please try again or{" "}
-            <a
-              href="https://github.com/edvincodes/LinkList/issues/new/choose"
-              className="text-cyan-400 hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              report this issue
-            </a>
-          </>
+          data.message ? (
+            data.message
+          ) : (
+            <>
+              Server Error. Please try again or{" "}
+              <a
+                href="https://github.com/edvincodes/LinkList/issues/new/choose"
+                className="text-cyan-400 hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                report this issue
+              </a>
+            </>
+          ),
         );
       } else {
         setCloneError(true);
         setCloneErrorMessage(data.message || "Failed to clone playlist");
       }
-    } catch {
+    } catch (error: any) {
       setCloneError(true);
-      setCloneErrorMessage("Network error while cloning playlist");
+      setCloneErrorMessage(
+        error.message || "Network error while cloning playlist",
+      );
     } finally {
       setDialogOpen(false);
     }
   }
 
-  // Modificado para aceptar modo silencioso (silent = true)
   async function testConnection(silent = false) {
     if (!silent) {
-      setConnectionDialogOpen(true);
+      setIsConnecting(true);
       setConnectionError(false);
     }
     setServerOnline(false);
@@ -144,10 +155,8 @@ export default function InputFields() {
           "Content-Type": "application/json",
         },
       });
-      const data = await res.json();
       if (res.ok) {
         setServerOnline(true);
-        console.log(data);
       } else if (res.status === 500 && !silent) {
         setConnectionError(true);
         setErrorMessage(<>Server Error (500).</>);
@@ -158,14 +167,13 @@ export default function InputFields() {
         setErrorMessage(<>Unable to connect to server.</>);
       }
     } finally {
-      if (!silent) setConnectionDialogOpen(false);
+      if (!silent) setIsConnecting(false);
     }
   }
 
   return (
     <>
       <div className="flex flex-col items-start justify-center w-full max-w-6xl gap-10 px-4 mb-20 lg:flex-row lg:gap-16">
-        {/* Columna Izquierda: Headers YTM */}
         <div className="flex flex-col items-center w-full gap-4 lg:w-1/2">
           <div className="w-full space-y-1">
             <h1 className="text-xl font-bold text-foreground">
@@ -184,9 +192,7 @@ export default function InputFields() {
           />
         </div>
 
-        {/* Columna Derecha: Conexión y Spotify */}
         <div className="flex flex-col w-full gap-6 lg:w-1/2 lg:gap-10">
-          {/* 1. Conexión */}
           <div className="flex flex-col items-start w-full gap-4">
             <div className="w-full space-y-2">
               <h1 className="text-xl font-bold text-foreground">
@@ -205,34 +211,17 @@ export default function InputFields() {
             </div>
 
             {!serverOnline && (
-              <AlertDialog
-                open={connectionDialogOpen}
-                onOpenChange={setConnectionDialogOpen}
+              <Button
+                className="w-full transition-all duration-300"
+                size="lg"
+                onClick={() => testConnection(false)}
+                disabled={isConnecting}
               >
-                <AlertDialogTrigger asChild>
-                  <Button
-                    className="w-full"
-                    size="lg"
-                    onClick={() => testConnection(false)}
-                  >
-                    Connect Manually
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="border bg-card border-cyan-500/20">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Requesting connection...
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Please wait till the server comes online.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                </AlertDialogContent>
-              </AlertDialog>
+                {isConnecting ? "Requesting connection..." : "Connect Manually"}
+              </Button>
             )}
           </div>
 
-          {/* 2. URL Spotify (Sin Login) */}
           <div className="flex flex-col items-start w-full gap-4">
             <div className="w-full space-y-2">
               <h1 className="text-xl font-bold text-foreground">
@@ -240,7 +229,6 @@ export default function InputFields() {
               </h1>
 
               <div className="flex flex-col gap-2 mt-1">
-                {/* Advertencia 1: Playlist pública */}
                 <div className="flex items-center gap-2">
                   <FaExclamationCircle className="w-4 h-4 text-cyan-400 shrink-0" />
                   <p className="text-sm text-muted-foreground">
@@ -248,7 +236,6 @@ export default function InputFields() {
                   </p>
                 </div>
 
-                {/* Advertencia 2: Playlists no soportadas (NUEVA) */}
                 <div className="flex items-start gap-2">
                   <FaExclamationCircle className="text-orange-400 w-4 h-4 mt-0.5 shrink-0" />
                   <p className="text-sm text-muted-foreground">
@@ -257,7 +244,6 @@ export default function InputFields() {
                   </p>
                 </div>
 
-                {/* Advertencia 3: Timeout */}
                 <div className="flex items-start gap-2">
                   <FaExclamationCircle className="text-yellow-400 w-4 h-4 mt-0.5 shrink-0" />
                   <p className="text-sm text-muted-foreground">
@@ -293,7 +279,6 @@ export default function InputFields() {
               </p>
             )}
 
-            {/* Botón Clone */}
             <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button
@@ -324,7 +309,6 @@ export default function InputFields() {
         </div>
       </div>
 
-      {/* --- DIÁLOGOS DE ALERTA --- */}
       <AlertDialog open={starPrompt} onOpenChange={setStarPrompt}>
         <AlertDialogContent className="border shadow-2xl bg-card border-lime-500/30 shadow-lime-500/10">
           <AlertDialogHeader>
@@ -359,7 +343,7 @@ export default function InputFields() {
               <AlertDialogAction
                 className={cn(
                   buttonVariants({ variant: "lime" }),
-                  "w-full text-black"
+                  "w-full text-black",
                 )}
               >
                 Clone Another Playlist

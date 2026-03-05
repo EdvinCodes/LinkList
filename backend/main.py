@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+# Eliminamos la barra final (trailing slash) si existe para evitar fallos de CORS
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173').rstrip('/')
 CORS(app, resources={
     r"/*": {
         "origins": [FRONTEND_URL, "http://localhost:5173", "http://127.0.0.1:5173"],
@@ -43,8 +44,17 @@ def create_playlist():
         }), 200
 
     except Exception as e:
-        logger.error(f"Server Error: {str(e)}", exc_info=True)
-        return jsonify({"message": str(e)}), 500
+        error_msg = str(e)
+        logger.error(f"Server Error: {error_msg}", exc_info=True)
+        
+        # Si el error es controlado (nuestros errores de Spotify o YT), lo mostramos.
+        # Si es un error interno de Python, enviamos un mensaje genérico.
+        if "Spotify API Error" in error_msg or "No songs were found" in error_msg:
+            safe_message = error_msg
+        else:
+            safe_message = "An unexpected server error occurred while processing the playlist."
+            
+        return jsonify({"message": safe_message}), 500
 
 @app.route('/', methods=['GET'])
 def home():
