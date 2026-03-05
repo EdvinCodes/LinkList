@@ -14,6 +14,7 @@
 **The ultimate tool to migrate your Spotify playlists to YouTube Music.**
 
 [Features](#-features) •
+[Roadmap](#-roadmap) •
 [Quick Start](#-quick-start) •
 [Tech Stack](#-tech-stack) •
 [CLI Mode](#-cli-self-hosting) •
@@ -38,11 +39,24 @@ Forget about manual searching — LinkList automates the process, matching your 
 # ✨ Features
 
 - 🎨 **Modern UI:** Fully responsive, Neon aesthetic interface built with React, Tailwind CSS, and Radix UI.
-- ⚡ **Fast & Concurrent:** Backend optimized to handle multiple users simultaneously using temporary authentication sessions.
-- 🛡️ **Robust Error Handling:** Smart matching algorithms that handle Chrome header compression and search failures gracefully.
+- ⚡ **Production-Ready & Concurrent:** Thread-based Gunicorn backend optimized to handle multiple users simultaneously without blocking server requests.
+- 🛡️ **Robust Error Handling:** Smart matching algorithms that handle Chrome header compression, gateway errors, and search failures gracefully.
+- 🔒 **High Security:** Zero storage of user credentials. Auth files are strictly ephemeral and self-destructing using secure temporary directories.
 - 📱 **Mobile Ready:** Responsive design for desktop, tablet, and mobile.
 - 💻 **CLI Mode included:** Includes a `selfhost.py` script for terminal lovers or large playlist migrations (no timeouts).
-- 🔒 **Secure:** No storage of user credentials. Auth files are ephemeral.
+
+---
+
+# 🗺️ Roadmap
+
+We are constantly working to improve LinkList. Here are some of the exciting features planned for upcoming releases:
+
+- **Multi-Account Support:** Segmented databases by user ID to prevent mixing history between different accounts.
+- **Backup & Restore:** Export and import your user settings and whitelists directly via JSON files.
+- **YouTube Media Downloader:** A new integrated tool to download videos and playlists, converting them directly to MP3 or MP4 formats.
+- **Social Management Tools:** - _Soft Block:_ Easily remove followers without blocking them completely.
+  - _Detect Ghosts:_ Quality filters to identify and flag inactive or bot-like users.
+- **Theme Selector:** A toggle switch for Dark/Light modes (though our current dark mode remains the professional standard!).
 
 ---
 
@@ -59,7 +73,7 @@ Forget about manual searching — LinkList automates the process, matching your 
 ## **Backend**
 
 - **Server:** Python 3 + Flask
-- **Production:** Gunicorn
+- **Production:** Gunicorn (gthread workers)
 - **APIs:** `ytmusicapi` (YouTube Music) + `spotipy` / `requests` (Spotify)
 - **Validation:** Regex & Error Logging
 
@@ -163,24 +177,23 @@ The script stores sessions in `browser.json` to avoid repeating header extractio
 # 🤝 Contributing
 
 1. Fork the repository
-
 2. Create your feature branch:
 
-   ```bash
-   git checkout -b feature/AmazingFeature
-   ```
+```bash
+git checkout -b feature/AmazingFeature
+```
 
 3. Commit your changes:
 
-   ```bash
-   git commit -m "Add some AmazingFeature"
-   ```
+```bash
+git commit -m "Add some AmazingFeature"
+```
 
 4. Push the branch:
 
-   ```bash
-   git push origin feature/AmazingFeature
-   ```
+```bash
+git push origin feature/AmazingFeature
+```
 
 5. Open a Pull Request.
 
@@ -190,7 +203,7 @@ The script stores sessions in `browser.json` to avoid repeating header extractio
 
 **LinkList** is a heavily modified fork of [SpotTransfer](https://github.com/Pushan2005/SpotTransfer).
 
-- **Copyright © 2025 Edvin:** UI/UX Redesign, Frontend Architecture (React/Tailwind), Backend Refactoring (Async/Threading), CLI Tool implementation.
+- **Copyright © 2025-2026 Edvin:** UI/UX Redesign, Frontend Architecture (React/Tailwind), Backend Refactoring (Production Stability/Threading), CLI Tool implementation.
 - **Copyright © 2024 Pushan2005:** Original concept and initial API integration logic.
 
 This project is licensed under the **GNU General Public License v3.0**.
@@ -201,7 +214,7 @@ This project is licensed under the **GNU General Public License v3.0**.
 
 Unlike other tools that hit rate limits or require subscriptions, LinkList is designed for performance and freedom:
 
-- **Concurrency:** Handles multiple users without crashing thanks to ephemeral auth sessions.
+- **Concurrency:** Handles multiple users without crashing thanks to ephemeral auth sessions and threaded workers.
 - **Smart Matching:** Enhanced search algorithm that finds songs even with slightly different metadata.
 - **Chrome Ready:** Fixes the common "header compression" bug found in other transfer tools.
 - **CLI Mode:** Includes a powerful terminal script for migrating massive libraries (1000+ songs) without browser timeouts.
@@ -211,10 +224,10 @@ Unlike other tools that hit rate limits or require subscriptions, LinkList is de
 <div align="center">
 
 <p align="center">
-  Developed with ❤️ by 
-  <a href="https://github.com/edvincodes" target="_blank" rel="noopener noreferrer">
-    <strong>Edvin</strong>
-  </a>
+Developed with ❤️ by
+<a href="https://github.com/edvincodes" target="_blank" rel="noopener noreferrer">
+<strong>Edvin</strong>
+</a>
 </p>
 
 </div>
