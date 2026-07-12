@@ -29,7 +29,8 @@ def get_video_ids(ytmusic, tracks):
     
     for track in tracks:
         song_name = track.get('name', 'Unknown')
-        artist_name = track.get('artists', ['Unknown'])[0]
+        artists = track.get('artists') or []
+        artist_name = artists[0] if artists else 'Unknown'
         
         try:
             # Búsqueda

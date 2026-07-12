@@ -5,6 +5,7 @@ import { Textarea } from "../ui/textarea";
 import { FaExclamationCircle, FaGithub } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { API_URL } from "@/lib/api";
 
 import {
   AlertDialog,
@@ -12,7 +13,6 @@ import {
   AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
   AlertDialogFooter,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
@@ -80,7 +80,7 @@ export default function InputFields() {
 
     try {
       setDialogOpen(true);
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/create`, {
+      const res = await fetch(`${API_URL}/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -98,15 +98,16 @@ export default function InputFields() {
       const data = await res.json();
 
       if (res.ok) {
-        if (data.missed_tracks?.count > 0) {
-          setMissedTracks(data.missed_tracks);
-          setMissedTracksDialog(true);
-        }
-        setStarPrompt(true);
-
         sessionStorage.removeItem("temp_playlist_url");
         sessionStorage.removeItem("temp_auth_headers");
         setAuthHeaders("");
+
+        if (data.missed_tracks?.count > 0) {
+          setMissedTracks(data.missed_tracks);
+          setMissedTracksDialog(true);
+        } else {
+          setStarPrompt(true);
+        }
       } else if (res.status === 500) {
         setCloneError(true);
         // EXTRAEMOS EL MENSAJE DEL BACKEND SI EXISTE
@@ -131,10 +132,12 @@ export default function InputFields() {
         setCloneError(true);
         setCloneErrorMessage(data.message || "Failed to clone playlist");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setCloneError(true);
       setCloneErrorMessage(
-        error.message || "Network error while cloning playlist",
+        error instanceof Error
+          ? error.message
+          : "Network error while cloning playlist",
       );
     } finally {
       setDialogOpen(false);
@@ -149,7 +152,7 @@ export default function InputFields() {
     setServerOnline(false);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/`, {
+      const res = await fetch(`${API_URL}/`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -280,22 +283,20 @@ export default function InputFields() {
             )}
 
             <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  disabled={
-                    !isValidUrl ||
-                    !authHeaders ||
-                    playlistUrl.trim() === "" ||
-                    !serverOnline
-                  }
-                  className="w-full"
-                  variant="lime"
-                  size="lg"
-                  onClick={clonePlaylist}
-                >
-                  Clone Playlist
-                </Button>
-              </AlertDialogTrigger>
+              <Button
+                disabled={
+                  !isValidUrl ||
+                  !authHeaders ||
+                  playlistUrl.trim() === "" ||
+                  !serverOnline
+                }
+                className="w-full"
+                variant="lime"
+                size="lg"
+                onClick={clonePlaylist}
+              >
+                Clone Playlist
+              </Button>
               <AlertDialogContent className="border bg-card border-cyan-500/20">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Fetching playlist...</AlertDialogTitle>
@@ -397,7 +398,10 @@ export default function InputFields() {
 
       <AlertDialog
         open={missedTracksDialog}
-        onOpenChange={setMissedTracksDialog}
+        onOpenChange={(open) => {
+          setMissedTracksDialog(open);
+          if (!open) setStarPrompt(true);
+        }}
       >
         <AlertDialogContent className="border shadow-2xl bg-card border-yellow-500/30 shadow-yellow-500/10">
           <AlertDialogHeader>
@@ -423,7 +427,10 @@ export default function InputFields() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction
-              onClick={() => setMissedTracksDialog(false)}
+              onClick={() => {
+                setMissedTracksDialog(false);
+                setStarPrompt(true);
+              }}
               className={buttonVariants({ variant: "secondary" })}
             >
               Close

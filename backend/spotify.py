@@ -75,18 +75,24 @@ def get_all_tracks(link):
 
             for item in items:
                 track = item.get("track")
-                if not track or track.get("is_local"):
+                if not track or track.get("is_local") or not track.get("name"):
                     continue
-                
+
+                artists = track.get("artists") or []
+                album = track.get("album") or {}
+
                 track_info = {
                     "name": track["name"],
-                    "artists": [artist["name"] for artist in track["artists"]],
-                    "album": track["album"]["name"],
-                    "duration_ms": track["duration_ms"]
+                    "artists": [artist["name"] for artist in artists if artist.get("name")],
+                    "album": album.get("name", ""),
+                    "duration_ms": track.get("duration_ms", 0)
                 }
                 all_tracks.append(track_info)
-            
+
             url = data.get("next")
+
+        if not all_tracks:
+            raise Exception("Spotify API Error: Playlist is empty or contains no transferable tracks")
             
         logger.info(f"✅ Total canciones: {len(all_tracks)}")
         return all_tracks

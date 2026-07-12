@@ -70,7 +70,11 @@ export default function Hero() {
             <Input
               placeholder="https://open.spotify.com/playlist/..."
               value={playlistUrl}
-              onChange={(e) => setPlaylistUrl(e.target.value)}
+              onChange={(e) => {
+                const url = e.target.value;
+                setPlaylistUrl(url);
+                sessionStorage.setItem("temp_playlist_url", url);
+              }}
               className={cn(
                 "w-full h-12 text-lg transition-all duration-300",
                 // Si hay error, borde rojo y anillo rojo. Si no, usa el estilo por defecto del componente Input.

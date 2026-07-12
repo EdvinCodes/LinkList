@@ -4,7 +4,7 @@ import ytmusicapi
 from ytmusicapi import YTMusic
 from spotify import get_all_tracks, get_playlist_name
 # Reutilizamos la lógica robusta de búsqueda que ya arreglamos
-from ytm import get_video_ids 
+from ytm import get_video_ids, sanitize_headers
 
 # Configurar logs para ver el progreso en la terminal
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -56,7 +56,7 @@ def setup_auth():
         raise Exception("No headers provided. Cannot authenticate.")
 
     logger.info("Setting up authentication...")
-    ytmusicapi.setup(filepath=auth_file, headers_raw=raw_headers)
+    ytmusicapi.setup(filepath=auth_file, headers_raw=sanitize_headers(raw_headers))
     return auth_file
 
 def main():

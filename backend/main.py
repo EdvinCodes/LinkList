@@ -49,7 +49,13 @@ def create_playlist():
         
         # Si el error es controlado (nuestros errores de Spotify o YT), lo mostramos.
         # Si es un error interno de Python, enviamos un mensaje genérico.
-        if "Spotify API Error" in error_msg or "No songs were found" in error_msg:
+        if (
+            "Spotify API Error" in error_msg
+            or "No songs were found" in error_msg
+            or "Invalid Spotify Playlist URL" in error_msg
+            or "authenticate" in error_msg.lower()
+            or "headers" in error_msg.lower()
+        ):
             safe_message = error_msg
         else:
             safe_message = "An unexpected server error occurred while processing the playlist."
